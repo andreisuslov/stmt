@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "stmt"
+version = "0.1.0"
+description = "A simple command-line tool for processing csv files to the "
+authors = ["Andrei Suslov <andrei.suslov.dev@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+click = "^8.0"
+pandas = "^2.2"
+
+[tool.poetry.scripts]
+stmt = "remove_columns.remove_columns:remove_columns"
+
+[[tool.poetry.packages]]
+include = "remove_columns"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
