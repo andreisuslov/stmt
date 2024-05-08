@@ -3,7 +3,7 @@ import click
 import pandas as pd
 from datetime import datetime
 from hashlib import sha256
-from log import get_logger
+from .log import get_logger
 
 logger = get_logger()
 
