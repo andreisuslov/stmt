@@ -3,6 +3,9 @@ import click
 import pandas as pd
 from datetime import datetime
 from hashlib import sha256
+from log import get_logger
+
+logger = get_logger()
 
 # Assuming we have a config setup similar to your detailed functionality
 class StatementConfig:
@@ -40,10 +43,18 @@ def clean_empty_values(df):
     """
     # Remove rows where both Credit and Debit are None
     df = df.dropna(subset=['Credit', 'Debit'], how='all')
-
     # Replace zeros with None for cleaner output
     df['Credit'].replace({0: None}, inplace=True)
     df['Debit'].replace({0: None}, inplace=True)
+    return df
+
+def sort_transactions(df):
+    """
+    Sorts the transactions in ascending order by the "Posted Date" column.
+    """
+    df['Posted Date'] = pd.to_datetime(df['Posted Date'])
+    df = df.sort_values('Posted Date', ascending=True)
+    df['Posted Date'] = df['Posted Date'].dt.strftime('%m/%d/%Y')
     return df
 
 @click.command()
@@ -53,25 +64,31 @@ def process_statement(input_file, output_file):
     """
     Removes 'Reference Number' and 'Address' columns from a CSV file if they exist.
     Splits 'Amount' into 'Credit' and 'Debit' and cleans up empty values.
+    Sorts the transactions in ascending order by the "Posted Date" column.
     Generates an output filename in the same directory as the input file if not specified.
     """
-    df = pd.read_csv(input_file)
-
-    # Check if the columns exist and drop them if they do
-    columns_to_drop = ['Reference Number', 'Address']
-    df = df.drop(columns=[col for col in columns_to_drop if col in df.columns], errors='ignore')
-
-    # Split the Amount into Credit and Debit and clean empty values
-    df = split_amount(df)
-    df = clean_empty_values(df)
-
-    if not output_file:
-        # Assume some default config if not provided
-        statement_config = StatementConfig(bank_name="defaultbank", account_type="credit")
-        output_file = generate_name(input_file, statement_config)
-
-    df.to_csv(output_file, index=False)
-    click.echo(f"File saved to {output_file}")
+    try:
+        df = pd.read_csv(input_file)
+        # Check if the columns exist and drop them if they do
+        columns_to_drop = ['Reference Number', 'Address']
+        df = df.drop(columns=[col for col in columns_to_drop if col in df.columns], errors='ignore')
+        # Split the Amount into Credit and Debit and clean empty values
+        df = split_amount(df)
+        df = clean_empty_values(df)
+        # Sort the transactions in ascending order
+        df = sort_transactions(df)
+        if not output_file:
+            # Assume some default config if not provided
+            statement_config = StatementConfig(bank_name="defaultbank", account_type="credit")
+            output_file = generate_name(input_file, statement_config)
+        df.to_csv(output_file, index=False)
+        logger.info(f"File saved to {output_file}")
+    except FileNotFoundError as e:
+        logger.error(f"File not found: {input_file}")
+        click.echo(f"Error: {str(e)}")
+    except Exception as e:
+        logger.error(f"An error occurred: {str(e)}")
+        click.echo(f"Error: {str(e)}")
 
 if __name__ == '__main__':
     process_statement()
