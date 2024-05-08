@@ -49,7 +49,7 @@ def clean_empty_values(df):
 @click.command()
 @click.argument('input_file')
 @click.option('--output_file', '-o', help='Path to the output CSV file', default=None)
-def remove_columns(input_file, output_file):
+def process_statement(input_file, output_file):
     """
     Removes 'Reference Number' and 'Address' columns from a CSV file if they exist.
     Splits 'Amount' into 'Credit' and 'Debit' and cleans up empty values.
@@ -74,4 +74,4 @@ def remove_columns(input_file, output_file):
     click.echo(f"File saved to {output_file}")
 
 if __name__ == '__main__':
-    remove_columns()
+    process_statement()

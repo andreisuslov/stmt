@@ -10,10 +10,10 @@ click = "^8.0"
 pandas = "^2.2"
 
 [tool.poetry.scripts]
-stmt = "remove_columns.remove_columns:remove_columns"
+stmt = "process_statement.process_statement:process_statement"
 
 [[tool.poetry.packages]]
-include = "remove_columns"
+include = "process_statement"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
