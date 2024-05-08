@@ -1,10 +1,19 @@
 NAME := stmt
 
-.PHONY: install reinstall clean
+# Define variables based on the operating system
+ifeq ($(OS),Windows_NT)
+    PYTHON := python
+    PIP := pip
+else
+    PYTHON := $(shell poetry env info -p)/bin/python
+    PIP := $(shell poetry env info -p)/bin/pip
+endif
+
+.PHONY: install reinstall clean help
 
 install:
-	@echo "Installing pipx if not already installed..."
-	@brew list pipx || brew install pipx || exit 1
+	@echo "Checking if pipx is installed..."
+	@$(PIP) show pipx &> /dev/null || $(PIP) install pipx
 	@pipx ensurepath
 	@echo "Configuring the project using Poetry..."
 	@poetry lock || exit 1
@@ -13,13 +22,13 @@ install:
 	@if pipx list | grep -q $(NAME); then \
 		echo "$(NAME) is already installed. Skipping installation."; \
 	else \
-		pipx install .; \
+		pipx install . --python $(PYTHON); \
 	fi
 
 reinstall:
 	@echo "Reinstalling $(NAME)..."
 	@pipx uninstall "$(NAME)" || true
-	@pipx install . --python $$(poetry env info -p)/bin/python
+	@pipx install . --python $(PYTHON)
 	@echo "$(NAME) has been reinstalled."
 
 clean:
