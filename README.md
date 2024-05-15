@@ -1,16 +1,19 @@
+
 # Statement Processor (stmt)
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-The Statement Processor (`stmt`) is a command-line tool that processes Bank of America transaction CSV files and reformats them into a specific format suitable for use in a Google Sheets-based Budget App. This tool simplifies the process of converting the raw transaction data from Bank of America into a clean and structured format, making it easier to import and analyze the data in your Budget App.
+The Statement Processor (`stmt`) is a command-line tool that processes Bank of America and Chase transaction CSV files and reformats them into a specific format suitable for use in a Google Sheets-based Budget App. This tool simplifies the process of converting the raw transaction data from these banks into a clean and structured format, making it easier to import and analyze the data in your Budget App.
 
 ## Features
 
-- Removes unnecessary columns such as "Reference Number" and "Address" from the input CSV file
+- Identifies the bank name based on the column headers of the transaction file
+- Removes unnecessary columns such as "Reference Number" and "Address" (Bank of America) or "Memo", "Post Date", and "Type" (Chase)
 - Splits the "Amount" column into separate "Credit" and "Debit" columns
 - Cleans up empty values and ensures that zeros do not appear in the "Credit" and "Debit" columns
-- Sorts the transactions in ascending order based on the "Posted Date" column
+- Sorts the transactions in ascending order based on the "Date" column
 - Generates an output CSV file with the processed data in the desired format
+- Option to unite multiple transaction sheets into one after processing
 
 ## Prerequisites
 
@@ -40,15 +43,21 @@ To install the Statement Processor, follow these steps:
 
 ## Usage
 
-Once the installation is complete, you can use the `stmt` command to process your Bank of America transaction CSV files:
+Once the installation is complete, you can use the `stmt` command to process your Bank of America or Chase transaction CSV files:
 
 ```bash
 stmt /path/to/your/transactions.csv
 ```
 
-Replace `/path/to/your/transactions.csv` with the actual path to your Bank of America transaction CSV file.
+Replace `/path/to/your/transactions.csv` with the actual path to your Bank of America or Chase transaction CSV file.
 
-The processed transactions will be saved in a new CSV file located in the same directory as the input file. The output file will have a generated name based on the bank name, account type, timestamp, and a unique identifier.
+To unite multiple transaction sheets into one, use the `--unite` option:
+
+```bash
+stmt --unite /path/to/your/transactions1.csv /path/to/your/transactions2.csv
+```
+
+The processed transactions will be saved in a new CSV file located in the same directory as the input file(s). The output file will have a generated name based on the bank name, account type, timestamp, and a unique identifier.
 
 ## Uninstallation
 
