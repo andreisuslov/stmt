@@ -13,6 +13,27 @@ class StatementConfig:
         self.bank_name = bank_name
         self.account_type = account_type
 
+    @staticmethod
+    def identify_bank_name(columns):
+        """
+        Identifies the bank name based on the column headers of the transaction file.
+        
+        Args:
+            columns (list): List of column headers from the transaction file.
+            
+        Returns:
+            str: Identified bank name.
+        """
+        chase_columns = {'Transaction Date', 'Post Date', 'Description', 'Category', 'Type', 'Amount', 'Memo'}
+        boa_columns = {'Posted Date', 'Reference Number', 'Payee', 'Address', 'Amount'}
+
+        if set(columns) == chase_columns:
+            return 'Chase'
+        elif set(columns) == boa_columns:
+            return 'Bank of America'
+        else:
+            return 'Unknown'
+
 def generate_hash(file_path):
     hash_object = sha256()
     stats = os.stat(file_path)
@@ -69,6 +90,10 @@ def process_statement(input_file, output_file):
     """
     try:
         df = pd.read_csv(input_file)
+        # Identify the bank name based on the column headers
+        bank_name = StatementConfig.identify_bank_name(df.columns.tolist())
+        # Assume some default config if not provided
+        statement_config = StatementConfig(bank_name=bank_name, account_type="credit")
         # Check if the columns exist and drop them if they do
         columns_to_drop = ['Reference Number', 'Address']
         df = df.drop(columns=[col for col in columns_to_drop if col in df.columns], errors='ignore')
@@ -78,8 +103,6 @@ def process_statement(input_file, output_file):
         # Sort the transactions in ascending order
         df = sort_transactions(df)
         if not output_file:
-            # Assume some default config if not provided
-            statement_config = StatementConfig(bank_name="defaultbank", account_type="credit")
             output_file = generate_name(input_file, statement_config)
         df.to_csv(output_file, index=False)
         logger.info(f"File saved to {output_file}")
