@@ -69,6 +69,7 @@ def clean_empty_values(df):
     df['Debit'].replace({0: None}, inplace=True)
     return df
 
+
 def sort_transactions(df):
     """
     Sorts the transactions in ascending order by the "Posted Date" column.
@@ -77,6 +78,12 @@ def sort_transactions(df):
     df = df.sort_values('Posted Date', ascending=True)
     df['Posted Date'] = df['Posted Date'].dt.strftime('%m/%d/%Y')
     return df
+
+def drop_columns(df, columns):
+    """
+    Drops specified columns from the DataFrame.
+    """
+    return df.drop(columns=columns, errors='ignore')
 
 @click.command()
 @click.argument('input_file')
@@ -95,8 +102,12 @@ def process_statement(input_file, output_file):
         # Assume some default config if not provided
         statement_config = StatementConfig(bank_name=bank_name, account_type="credit")
         # Check if the columns exist and drop them if they do
-        columns_to_drop = ['Reference Number', 'Address']
-        df = df.drop(columns=[col for col in columns_to_drop if col in df.columns], errors='ignore')
+        if statement_config.bank_name == 'Chase':
+            columns_to_drop = ['Memo', 'Post Date', 'Type']
+            df = drop_columns(df, columns_to_drop)
+        if statement_config.bank_name == 'Bank of America':
+            columns_to_drop = ['Reference Number', 'Address']
+            df = drop_columns(df, columns_to_drop)
         # Split the Amount into Credit and Debit and clean empty values
         df = split_amount(df)
         df = clean_empty_values(df)
