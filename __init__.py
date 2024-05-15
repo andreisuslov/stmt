@@ -1,3 +1,3 @@
-from process_statement.log import get_logger
+from process_statements.log import get_logger
 
 logger = get_logger()

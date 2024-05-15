@@ -10,10 +10,10 @@ click = "^8.0"
 pandas = "^2.2"
 
 [tool.poetry.scripts]
-stmt = "process_statement.process_statement:process_statement"
+stmt = "process_statements.process_statements:process_statements"
 
 [[tool.poetry.packages]]
-include = "process_statement"
+include = "process_statements"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

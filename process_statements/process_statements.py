@@ -63,8 +63,8 @@ def clean_empty_values(df):
     """
     # Remove rows where both Credit and Debit are None
     df = df.dropna(subset=['Credit', 'Debit'], how='all')
-    df['Credit'] = df['Credit'].replace({0: None})
-    df['Debit'] = df['Debit'].replace({0: None})
+    df.loc[:, 'Credit'] = df['Credit'].replace({0: None})
+    df.loc[:, 'Debit'] = df['Debit'].replace({0: None})
     return df
 
 def sort_transactions(df, date_column):
@@ -88,8 +88,10 @@ def rename_column_title(df, old_title, new_title):
 
 @click.command()
 @click.argument('input_files', nargs=-1, type=click.Path(exists=True))
-@click.option('--output_dir', '-o', help='Directory to save the output CSV files', default=None, type=click.Path())
-def process_statements(input_files, output_dir):
+@click.option('--unite', is_flag=True, help="Unite all transaction sheets into one after processing")
+def process_statements(input_files, unite):
+    combined_df = pd.DataFrame()
+
     for input_file in input_files:
         try:
             df = pd.read_csv(input_file)
@@ -139,14 +141,19 @@ def process_statements(input_files, output_dir):
                 click.echo(f"Error: DataFrame is None or empty after sorting transactions for {input_file}.")
                 continue
 
-            if not output_dir:
-                output_file = generate_name(input_file, statement_config)
+            if unite:
+                # Filter out all-NA columns before concatenation
+                df = df.dropna(axis=1, how='all')
+                if not df.empty:
+                    if combined_df.empty:
+                        combined_df = df
+                    else:
+                        combined_df = pd.concat([combined_df, df], ignore_index=True)
             else:
-                output_file = os.path.join(output_dir, os.path.basename(generate_name(input_file, statement_config)))
-
-            df.to_csv(output_file, index=False)
-            logger.info(f"File saved to {output_file}")
-            click.echo(f"File saved to {output_file}")
+                output_file = generate_name(input_file, statement_config)
+                df.to_csv(output_file, index=False)
+                logger.info(f"File saved to {output_file}")
+                click.echo(f"File saved to {output_file}")
 
         except FileNotFoundError as e:
             logger.error(f"File not found: {input_file}")
@@ -154,6 +161,24 @@ def process_statements(input_files, output_dir):
         except Exception as e:
             logger.error(f"An error occurred: {str(e)}")
             click.echo(f"Error: {str(e)}")
+
+    if unite:
+        if combined_df is None or combined_df.empty:
+            logger.error("Combined DataFrame is None or empty.")
+            click.echo("Error: Combined DataFrame is None or empty.")
+            return
+
+        combined_df = sort_transactions(combined_df, date_column)
+        if combined_df is None or combined_df.empty:
+            logger.error("Combined DataFrame is None or empty after sorting.")
+            click.echo("Error: Combined DataFrame is None or empty after sorting.")
+            return
+
+        # Using the first input file to generate the output file name
+        output_file = generate_name(input_files[0], StatementConfig(bank_name='Combined', account_type='credit'))
+        combined_df.to_csv(output_file, index=False)
+        logger.info(f"Combined file saved to {output_file}")
+        click.echo(f"Combined file saved to {output_file}")
 
 if __name__ == '__main__':
     process_statements()
