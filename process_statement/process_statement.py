@@ -7,7 +7,6 @@ from .log import get_logger
 
 logger = get_logger()
 
-# Assuming we have a config setup similar to your detailed functionality
 class StatementConfig:
     def __init__(self, bank_name, account_type):
         self.bank_name = bank_name
@@ -64,19 +63,17 @@ def clean_empty_values(df):
     """
     # Remove rows where both Credit and Debit are None
     df = df.dropna(subset=['Credit', 'Debit'], how='all')
-    # Replace zeros with None for cleaner output
-    df['Credit'].replace({0: None}, inplace=True)
-    df['Debit'].replace({0: None}, inplace=True)
+    df['Credit'] = df['Credit'].replace({0: None})
+    df['Debit'] = df['Debit'].replace({0: None})
     return df
 
-
-def sort_transactions(df):
+def sort_transactions(df, date_column):
     """
     Sorts the transactions in ascending order by the "Posted Date" column.
     """
-    df['Posted Date'] = pd.to_datetime(df['Posted Date'])
-    df = df.sort_values('Posted Date', ascending=True)
-    df['Posted Date'] = df['Posted Date'].dt.strftime('%m/%d/%Y')
+    df[date_column] = pd.to_datetime(df[date_column])
+    df = df.sort_values(date_column, ascending=True)
+    df[date_column] = df[date_column].dt.strftime('%m/%d/%Y')
     return df
 
 def drop_columns(df, columns):
@@ -85,38 +82,68 @@ def drop_columns(df, columns):
     """
     return df.drop(columns=columns, errors='ignore')
 
+def rename_column_title(df, old_title, new_title):
+    df.rename(columns={old_title: new_title}, inplace=True)
+    return df
+
 @click.command()
 @click.argument('input_file')
 @click.option('--output_file', '-o', help='Path to the output CSV file', default=None)
 def process_statement(input_file, output_file):
-    """
-    Removes 'Reference Number' and 'Address' columns from a CSV file if they exist.
-    Splits 'Amount' into 'Credit' and 'Debit' and cleans up empty values.
-    Sorts the transactions in ascending order by the "Posted Date" column.
-    Generates an output filename in the same directory as the input file if not specified.
-    """
     try:
         df = pd.read_csv(input_file)
-        # Identify the bank name based on the column headers
+        if df is None or df.empty:
+            logger.error(f"DataFrame is None or empty after reading {input_file}")
+            click.echo("Error: DataFrame is None or empty.")
+            return
+        
+        logger.info(f"Columns in the input file: {df.columns.tolist()}")
+
         bank_name = StatementConfig.identify_bank_name(df.columns.tolist())
-        # Assume some default config if not provided
+        if bank_name == 'Unknown':
+            logger.error(f"Unknown bank name based on columns: {df.columns.tolist()}")
+            click.echo("Error: Unknown bank name.")
+            return
+
         statement_config = StatementConfig(bank_name=bank_name, account_type="credit")
-        # Check if the columns exist and drop them if they do
+
+        date_column = None
         if statement_config.bank_name == 'Chase':
             columns_to_drop = ['Memo', 'Post Date', 'Type']
             df = drop_columns(df, columns_to_drop)
-        if statement_config.bank_name == 'Bank of America':
+            df = rename_column_title(df, 'Transaction Date', 'Date')
+        elif statement_config.bank_name == 'Bank of America':
             columns_to_drop = ['Reference Number', 'Address']
             df = drop_columns(df, columns_to_drop)
-        # Split the Amount into Credit and Debit and clean empty values
+            df = rename_column_title(df, 'Posted Date', 'Date')
+            df = rename_column_title(df, 'Payee', 'Description')
+        
+        date_column = 'Date'
+
         df = split_amount(df)
+        if df is None or df.empty:
+            logger.error("DataFrame is None or empty after splitting amount.")
+            click.echo("Error: DataFrame is None or empty after splitting amount.")
+            return
+        
         df = clean_empty_values(df)
-        # Sort the transactions in ascending order
-        df = sort_transactions(df)
+        if df is None or df.empty:
+            logger.error("DataFrame is None or empty after cleaning empty values.")
+            click.echo("Error: DataFrame is None or empty after cleaning empty values.")
+            return
+        
+        df = sort_transactions(df, date_column)
+        if df is None or df.empty:
+            logger.error("DataFrame is None or empty after sorting transactions.")
+            click.echo("Error: DataFrame is None or empty after sorting transactions.")
+            return
+
         if not output_file:
             output_file = generate_name(input_file, statement_config)
+        
         df.to_csv(output_file, index=False)
         logger.info(f"File saved to {output_file}")
+
     except FileNotFoundError as e:
         logger.error(f"File not found: {input_file}")
         click.echo(f"Error: {str(e)}")
