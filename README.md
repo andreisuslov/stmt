@@ -19,27 +19,67 @@ The Statement Processor (`stmt`) is a command-line tool that processes Bank of A
 
 Before installing and using the Statement Processor, ensure that you have the following:
 
-- Python 3.x installed on your system
-- [Poetry](https://python-poetry.org/) package manager installed
+- **Python 3.8 or higher** installed on your system. You can check your Python version with:
+  ```bash
+  python3 --version
+  ```
+- [**Poetry**](https://python-poetry.org/) package manager installed. You can install it using:
+  ```bash
+  curl -sSL https://install.python-poetry.org | python3 -
+  ```
+- [**pipx**](https://pypa.github.io/pipx/) installed for managing Python CLI tools. You can install it using:
+  ```bash
+  python3 -m pip install --user pipx
+  python3 -m pipx ensurepath
+  ```
 
 ## Installation
 
 To install the Statement Processor, follow these steps:
 
-1. Clone the repository:
+1. **Clone the Repository**:
 
+   Clone the `stmt` repository from GitHub and navigate to the project directory:
    ```bash
    git clone https://github.com/andreisuslov/stmt.git
    cd stmt
    ```
 
-2. Install the dependencies and the command-line tool using the provided Makefile:
+2. **Install Dependencies and the Command-Line Tool**:
 
+   Use the provided `Makefile` to install the dependencies and the `stmt` command-line tool:
    ```bash
    make install
    ```
 
-   This command will check if `pipx` is installed, configure the project using Poetry, and install the `stmt` command-line tool.
+   This command will:
+   - Check if `pipx` is installed.
+   - Configure the project environment using Poetry.
+   - Install the `stmt` command-line tool into the default pipx-managed directory (typically `~/.local/bin`).
+
+3. **Add `stmt` to the PATH**:
+
+   If `stmt` is not immediately recognized as a command, ensure that the pipx binary directory (`~/.local/bin`) is included in your system's PATH.
+
+   Add the following line to your shell configuration file (e.g., `~/.zshrc` or `~/.bashrc`):
+   ```bash
+   export PATH=$HOME/.local/bin:$PATH
+   ```
+
+   Reload the shell configuration:
+   ```bash
+   source ~/.zshrc  # Or ~/.bashrc for bash users
+   ```
+
+4. **Verify the Installation**:
+
+   After installation, verify that the `stmt` command is available by running:
+   ```bash
+   stmt --help
+   ```
+
+   If the installation was successful, you will see the help message for the `stmt` command-line tool.
+
 
 ## Usage
 
